@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mill End Values</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .switch-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .switch {
+            width: 50px;
+            height: 200px;
+            background: #ccc;
+            border-radius: 25px;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .switch-knob {
+            width: 50px;
+            height: 50px;
+            background: #8A0303;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .switch-label {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: black; /* Default color */
+            cursor: pointer;
+            transition: transform 0.3s, text-shadow 0.3s;
+        }
+        .switch-label.p {
+            top: 5%;
+        }
+        .switch-label.w {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .switch-label.t {
+            bottom: 5%;
+        }
+        .view-container {
+            display: none;
+        }
+        .view-container.active {
+            display: block;
+        }
+        .flash-red {
+            animation: flash-red 1s infinite;
+            color: #39FF14; /* Bright neon green */
+            transform: translateZ(20px); /* Move to the front */
+            text-shadow: 0 0 10px #FF073A, 0 0 20px #FF073A, 0 0 30px #FF073A; /* 3D effect */
+        }
+        @keyframes flash-red {
+            0% { color: #FF073A; } /* Bright neon red */
+            50% { color: #8A0303; }
+            100% { color: #FF073A; }
+        }
+        .mill-container {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .product-container {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .product-container > div {
+            display: inline-block;
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mill End Values</h1>
+    <div class="switch-container">
+        <div class="switch">
+            <div class="switch-knob" id="switch-knob"></div>
+            <div class="switch-label p" id="label-p">P</div>
+            <div class="switch-label w" id="label-w">W</div>
+            <div class="switch-label t" id="label-t">T</div>
+        </div>
+    </div>
+    <div id="view1" class="view-container active">
+        {% for mill_id, graphs in figures.items() %}
+            <h2>Mill {{ mill_id }}</h2>
+            <div class="product-container">
+                {% for graph in graphs %}
+                    <div>{{ graph|safe }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <div id="view2" class="view-container">
+        <!-- Content for View 2 -->
+    </div>
+    <div id="view3" class="view-container">
+        {% for mill_id, graphs in figures.items() %}
+            <h2>Mill {{ mill_id }}</h2>
+            <div class="product-container">
+                {% for graph in graphs %}
+                    <div>{{ graph|safe }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const knob = document.getElementById('switch-knob');
+            const views = ['view1', 'view2', 'view3'];
+            const labels = ['label-p', 'label-w', 'label-t'];
+            let currentView = 0;
+
+            function updateView(index) {
+                currentView = index;
+                views.forEach((view, idx) => {
+                    document.getElementById(view).classList.toggle('active', idx === currentView);
+                });
+                labels.forEach((label, idx) => {
+                    document.getElementById(label).classList.toggle('flash-red', idx === currentView);
+                });
+                knob.style.top = `${index * 50 + 5}%`;
+            }
+
+            knob.addEventListener('mousedown', function(event) {
+                event.preventDefault();
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            function onMouseMove(event) {
+                const switchRect = document.querySelector('.switch').getBoundingClientRect();
+                const knobRect = knob.getBoundingClientRect();
+                const y = event.clientY - switchRect.top - knobRect.height / 2;
+                const percentage = Math.max(0, Math.min(100, (y / switchRect.height) * 100));
+                const index = Math.round(percentage / 50);
+                updateView(index);
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            labels.forEach((label, index) => {
+                document.getElementById(label).addEventListener('click', function() {
+                    updateView(index);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

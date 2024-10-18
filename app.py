@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, jsonify
 import pyodbc
 import logging
 from flask_cors import CORS
-from dash_app import app as dash_app
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -27,13 +27,11 @@ app.register_blueprint(view_routes_transfers)
 from view_routes_water import view_routes_water
 app.register_blueprint(view_routes_water)
 
-# Integrate Dash with Flask
-dash_app.server = app
+# Importing and registering the dash module
+from dash_module import dash_bp
+app.register_blueprint(dash_bp)
 
-# Define a route for the Dash app
-@app.route('/dash')
-def render_dash():
-    return dash_app.index()
+
 
 
 # Run the Flask app in debug mode if this file is run directly
