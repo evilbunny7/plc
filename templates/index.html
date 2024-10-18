@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Flask Web App</title>
+</head>
+<body>
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <ul class="navbar-links">
+                <li><a href="{{ url_for('routes.index') }}">Home</a></li>
+                <li><a href="{{ url_for('view_routes.view_data') }}">Products Milled</a></li>
+                <li><a href="{{ url_for('view_routes_transfers.view_data_transfers') }}">Transfers-Conditioning</a></li>
+                <li><a href="{{ url_for('view_routes_water.view_data_water') }}">Water Stage</a></li>
+                <li><a href="/dash">Dash Page</a></li>
+                <!-- Add more links as needed -->
+            </ul>
+        </nav>
+    <div class = "content">   
+        <div class="center-container">
+            <form id="data-form">
+                <label for="dropdown-1">Mill:</label>
+                <!-- First dropdown populated dynamically with data from the backend -->
+                <select id="dropdown-1" name="dropdown_1"></select>
+            
+                <label for="dropdown-2">Shift:</label>
+                <!-- Second dropdown populated dynamically with data from the backend -->
+                <select id="dropdown-2" name="dropdown_2"></select>
+            
+                <label for="dropdown-3">Miller:</label>
+                <!-- Third dropdown populated dynamically with data from the backend -->
+                <select id="dropdown-3" name="dropdown_3"></select>
+
+                <label for="date-picker">Select Date:</label>
+                <!-- Date picker to select a date value -->
+                <input type="date" id="date-picker" name="selected_date">
+
+                <!-- Button to submit the form data -->
+                <button id="submit-button" type="button">Submit</button>
+             </form>
+        </div>
+   
+
+        <div class="left-container">
+            <div id="dynamic-input-fields"></div>
+        </div>
+        <div class="right-container">
+            <div id="dynamic-input-fields-2"></div>
+        </div>
+        <div class="bottom-container">
+        <div id="dynamic-input-fields-3"></div>
+        </div>
+    </div> 
+    
+    <!-- JavaScript to handle the dynamic population and submission of form data -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

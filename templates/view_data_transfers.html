@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <title>View Transfers-Consitioning</title>
+    <style>
+        body {
+            background-image: url('{{ url_for('static', filename='images/Conditioning.webp') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('routes.index') }}">Home</a></li>
+            <li><a href="{{ url_for('view_routes.view_data') }}">Products Milled</a></li>
+            <li><a href="{{ url_for('view_routes_transfers.view_data_transfers') }}">Transfers/Conditioning</a></li>
+            <li><a href="{{ url_for('view_routes_water.view_data_water') }}">Water Stage</a></li>
+            <!-- Add more links as needed -->
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>Transfer-Conditioning View</h1>
+        <div class="content">
+            <form method="POST" action="{{ url_for('view_routes_transfers.view_data_transfers') }}">
+                <div class="date-selector-container">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" class="date-selector" value="{{ start_date }}">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" class="date-selector" value="{{ end_date }}">
+                </div>
+                <div class="filter-container">
+                    <label for="mill_name">Mill Name:</label>
+                    <select id="mill_name" name="mill_name" multiple class="select2">
+                        {% for mill in mills %}
+                            <option value="{{ mill }}" {% if mill in selected_mills %}selected{% endif %}>{{ mill }}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="transfer_type">Transfer Type:</label>
+                    <select id="transfer_type" name="transfer_type" multiple class="select2">
+                        {% for transfer_type in transfers %}
+                            <option value="{{ transfer_type }}" {% if transfer_type in selected_transfers %}selected{% endif %}>{{ transfer_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit">Filter</button>
+                <button type="button" id="export-btn" class="export-button">Export to Excel</button>
+            </form>
+            <table>
+                <thead>
+                    <tr>
+                        {% for column in columns %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                        <tr>
+                            {% for cell in row %}
+                                <td>{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+            $(document).ready(function() {
+                $('.select2').select2();
+            });
+    
+            document.getElementById('export-btn').addEventListener('click', function() {
+                // Get the current filter values
+                var startDate = document.getElementById('start_date').value;
+                var endDate = document.getElementById('end_date').value;
+    
+                var millSelect = document.getElementById('mill_name');
+                var transferSelect = document.getElementById('transfer_type');
+    
+                var selectedMills = Array.from(millSelect.selectedOptions).map(option => option.value);
+                var selectedTransfers = Array.from(transferSelect.selectedOptions).map(option => option.value);
+    
+                // Construct the export URL with query parameters
+                var url = '{{ url_for("view_routes_transfers.export_data_transfers") }}?start_date=' + encodeURIComponent(startDate) + '&end_date=' + encodeURIComponent(endDate);
+    
+                selectedMills.forEach(function(mill) {
+                    url += '&mill_name=' + encodeURIComponent(mill);
+                });
+    
+                selectedTransfers.forEach(function(transfer) {
+                    url += '&transfer_type=' + encodeURIComponent(transfer);
+                });
+    
+                // Redirect to the constructed URL
+                window.location.href = url;
+            });
+    </script>
+</body>
+</html>

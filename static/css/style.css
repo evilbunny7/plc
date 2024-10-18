@@ -1,0 +1,221 @@
+/* CSS (style.css) */
+body {
+    font-family: Arial, sans-serif;
+    background-image: url('/static/images/background.jpg');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0;
+    padding: 20px;
+    background: rgba(249, 249, 249, 0.9);
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.center-container {
+    max-width: 400px;
+    margin: 0;
+    padding: 20px;
+    background: rgba(249, 249, 249, 0.9);
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    position: absolute;
+    top: 0;
+    right: 0;
+    transition: box-shadow 0.3s, border 0.3s;
+}
+
+.left-container, .right-container, .bottom-container {
+    max-width: 300px;
+    margin: 20px;
+    padding: 20px;
+    background: rgba(249, 249, 249, 0.9);
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    float: left;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+}
+
+select, input[type="text"], input[type="date"] {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+input[type="number"]:enabled {
+    box-shadow: 0 0 5px 2px rgba(0, 123, 255, 0.5); /* Slight blue glow when active */
+}
+
+button {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+button:hover {
+    background: #0056b3;
+    transform: scale(1.05); /* Slight zoom effect on hover */
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5); /* Glow effect on hover */
+}
+
+button:active {
+    transform: scale(0.95); /* Slight shrink effect on click */
+}
+
+.field-container {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+#dynamic-input-fields, #dynamic-input-fields-2, #dynamic-input-fields-3 {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.field-container-dual {
+    margin: 10px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.inactive-container {
+    border: 2px solid red;
+    padding: 10px;
+    box-shadow: 0 0 10px red;
+    border-radius: 5px;
+}
+
+  /* Styling for the view data link */
+.view-data-link {
+    display: inline-block;
+    margin: 20px 0;
+    padding: 10px 20px;
+    background-color: #007BFF;  
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.view-data-link:hover {
+    background-color: #0056b3;  
+}
+
+/* Navigation Bar Styles */
+.navbar {
+    width: 100%;
+    background-color: rgba(51, 51, 51, 0.85);
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.navbar-links {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.navbar-links li {
+    display: inline;
+}
+
+.navbar-links li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 20px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.navbar-links li a:hover {
+    background-color: #575757;
+}
+
+/* Add margin to the top of the content to create a gap */
+.content {
+    margin-top: 70px; /* Adjust the value as needed */
+    overflow-x: auto;
+    overflow-y:auto;
+}
+
+/* Table Styles */
+table {
+    width: 110%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+th, td {
+    padding: 12px; /* Adjust the padding to make columns larger */
+    border: 1px dotted #ccc; /* Add dotted lines between columns */
+    text-align: left;
+    word-wrap:break-word;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* Date Selector Styles */
+.date-selector-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px; /* Add some space below the date selectors */
+}
+
+.date-selector {
+    width: 48%; /* Set the width to 48% to ensure they fit side by side with some space */
+    display: inline-block;
+}
+
+/* Export Button Styles */
+.export-button {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border: none;
+    background: #28a745; /* Green background */
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.export-button:hover {
+    background: #218838; /* Darker green on hover */
+    transform: scale(1.05); /* Slight zoom effect on hover */
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.5); /* Glow effect on hover */
+}
+
+.export-button:active {
+    transform: scale(0.95); /* Slight shrink effect on click */
+}
