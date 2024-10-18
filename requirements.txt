@@ -1,2 +1,6 @@
-Flask 
+Flask
 pyodbc
+flask_cors
+dash
+plotly
+pandas
