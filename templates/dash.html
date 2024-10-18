@@ -55,7 +55,7 @@
             display: none;
         }
         .view-container.active {
-            display: block;
+            display: block !important;
         }
         .flash-red {
             animation: flash-red 1s infinite;
@@ -95,27 +95,16 @@
         </div>
     </div>
     <div id="view1" class="view-container active">
-        {% for mill_id, graphs in figures.items() %}
-            <h2>Mill {{ mill_id }}</h2>
-            <div class="product-container">
-                {% for graph in graphs %}
-                    <div>{{ graph|safe }}</div>
-                {% endfor %}
-            </div>
-        {% endfor %}
+        <h3>View 1 Content</h3>
+        <!-- Content will be dynamically inserted here -->
     </div>
     <div id="view2" class="view-container">
-        <!-- Content for View 2 -->
+        <h3>View 2 Content</h3>
+        <!-- Content will be dynamically inserted here -->
     </div>
     <div id="view3" class="view-container">
-        {% for mill_id, graphs in figures.items() %}
-            <h2>Mill {{ mill_id }}</h2>
-            <div class="product-container">
-                {% for graph in graphs %}
-                    <div>{{ graph|safe }}</div>
-                {% endfor %}
-            </div>
-        {% endfor %}
+        <h3>View 3 Content</h3>
+        <!-- Content will be dynamically inserted here -->
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -127,13 +116,68 @@
             function updateView(index) {
                 currentView = index;
                 views.forEach((view, idx) => {
-                    document.getElementById(view).classList.toggle('active', idx === currentView);
+                    const viewElement = document.getElementById(view);
+                    if (idx === currentView) {
+                        viewElement.classList.add('active');
+                        viewElement.style.display = 'block';
+                    } else {
+                        viewElement.classList.remove('active');
+                        viewElement.style.display = 'none';
+                    }
                 });
                 labels.forEach((label, idx) => {
                     document.getElementById(label).classList.toggle('flash-red', idx === currentView);
                 });
                 knob.style.top = `${index * 50 + 5}%`;
+                
+                // Update URL with new view
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('view', views[currentView]);
+                history.pushState({}, '', newUrl);
+                
+                // Send AJAX request to update server-side view
+                fetch(`/update_view?view=${views[currentView]}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('View updated on server:', data);
+                        if (data.status === 'success') {
+                            setTimeout(() => {
+                                const viewContainer = document.getElementById(views[currentView]);
+                                viewContainer.innerHTML = ''; // Clear existing content
+                                for (const [millId, graphs] of Object.entries(data.figures)) {
+                                    const millHeader = document.createElement('h2');
+                                    millHeader.textContent = `Mill ${millId}`;
+                                    viewContainer.appendChild(millHeader);
+                                    
+                                    const productContainer = document.createElement('div');
+                                    productContainer.className = 'product-container';
+                                    graphs.forEach(graph => {
+                                        const graphDiv = document.createElement('div');
+                                        graphDiv.innerHTML = graph.html;
+                                        if (graph.data) {
+                                            const plotData = JSON.parse(graph.data);
+                                            Plotly.newPlot(graphDiv, plotData.data, plotData.layout);
+                                        }
+                                        productContainer.appendChild(graphDiv);
+                                    });
+                                    viewContainer.appendChild(productContainer);
+                                }
+                                console.log('View content updated');
+                                console.log('Current innerHTML:', viewContainer.innerHTML);
+                            }, 100); // 100ms delay
+                        } else {
+                            console.error('Error updating view:', data.message);
+                        }
+                    })
+                    .catch(error => console.error('Error updating view:', error));
+                
+                console.log(`Switched to view: ${views[currentView]}`);
             }
+
+            // Set initial view based on server-side value
+            let initialView = views.indexOf('{{ initial_view }}');
+            if (initialView === -1) initialView = 0; // Default to view1 if not found
+            updateView(initialView);
 
             knob.addEventListener('mousedown', function(event) {
                 event.preventDefault();
@@ -146,7 +190,7 @@
                 const knobRect = knob.getBoundingClientRect();
                 const y = event.clientY - switchRect.top - knobRect.height / 2;
                 const percentage = Math.max(0, Math.min(100, (y / switchRect.height) * 100));
-                const index = Math.round(percentage / 50);
+                const index = Math.round(percentage / 50); // Ensure this maps correctly to 0, 1, or 2
                 updateView(index);
             }
 
