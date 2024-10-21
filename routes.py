@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, jsonify, request
 import pyodbc
 import logging
 from validators import validate_all_input_values
+from datetime import datetime
 
 # Create a Blueprint for the routes
 routes = Blueprint('routes', __name__)
@@ -171,50 +172,46 @@ def submit():
         if not is_valid:
             return jsonify({'error': 'Opening balance cannot be less than closing balance please review your input or call an admin'}), 400
 
+        # Get the current system date and time
+        actual_date = datetime.now()
+
         # Insert into Mill_Log and retrieve the Log_ID
         cursor.execute("""
             INSERT INTO dbo.Mill_Log (Date, Shift_ID, Miller_ID, Mill_ID, Actual_Date)
             OUTPUT INSERTED.Log_ID
             VALUES (?, ?, ?, ?, ?);
-        """, (user_date, dropdown_2, dropdown_3, mill_id, user_date))
+        """, (user_date, dropdown_2, dropdown_3, mill_id, actual_date))
         
         # Retrieve the auto-generated Log_ID
         log_id = cursor.fetchone()[0]
         logging.debug(f"Generated log_id: {log_id}")
 
-        # Use the retrieved log_id for subsequent inserts
         # Insert into Product_Movement_Log
         for product_id, end_value in input_values_1.items():
-            if end_value is None:
-                continue
             previous_value = get_previous_end_value(cursor, 'dbo.Product_Movement_Log', mill_id, 'Product_ID', product_id)
-            movement = end_value - previous_value
+            movement = float(end_value) - previous_value
             cursor.execute("""
                 INSERT INTO dbo.Product_Movement_Log (Log_ID, Product_ID, End_Value, Scale_Opening_Value, Movement, Shift, Miller, Date, Mill_ID)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (log_id, product_id, end_value, previous_value, movement, dropdown_2, dropdown_3, user_date, mill_id))
+            """, (log_id, product_id, float(end_value), previous_value, movement, dropdown_2, dropdown_3, user_date, mill_id))
 
         # Insert into Transfer_Movement_Log
         for transfer_id, end_value in input_values_2.items():
-            if end_value is None:
-                continue
             previous_value = get_previous_end_value(cursor, 'dbo.Transfer_Movement_Log', mill_id, 'Transfer_ID', transfer_id)
-            movement = end_value - previous_value
+            movement = float(end_value) - previous_value
             cursor.execute("""
                 INSERT INTO dbo.Transfer_Movement_Log (Log_ID, Transfer_ID, End_Value, Scale_Opening_Value, Movement, Shift, Miller, Date, Mill_ID)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (log_id, transfer_id, end_value, previous_value, movement, dropdown_2, dropdown_3, user_date, mill_id))
+            """, (log_id, transfer_id, float(end_value), previous_value, movement, dropdown_2, dropdown_3, user_date, mill_id))
 
         # Insert into Stage_Movement_Log
         for stage_id, end_value in input_values_3.items():
-            if end_value is None:
-                continue
             previous_value = get_previous_end_value(cursor, 'dbo.Stage_Movement_Log', mill_id, 'Stage_ID', stage_id)
-            movement = end_value - previous_value
+            movement = float(end_value) - previous_value
             cursor.execute("""
                 INSERT INTO dbo.Stage_Movement_Log (Log_ID, Stage_ID, End_Value, Scale_Opening_Value, Movement, Shift, Miller, Date, Mill_ID)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (log_id, stage_id, end_value, previous_value, movement, dropdown_2, dropdown_3, user_date, mill_id))
+            """, (log_id, stage_id, float(end_value), previous_value, movement, dropdown_2, dropdown_3, user_date, mill_id))
 
         # Commit the transaction to save the changes in the database
         conn.commit()

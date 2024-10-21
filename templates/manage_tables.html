@@ -59,6 +59,25 @@
         #add-record-btn:hover {
             background-color: #0056b3;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
     </style>
 </head>
 <body>
@@ -81,13 +100,13 @@
             <option value="Water_Conditioning">Water Conditioning</option>
             <option value="Water_Stage">Water Stage</option>
             <option value="Product_Table">Product</option>
+            <option value="Product_Movement_Log">Product Movement Log</option>
+            <option value="Transfer_Movement_Log">Transfer Movement Log</option>
+            <option value="Stage_Movement_Log">Stage Movement Log</option>
         </select>
         <table id="records-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Actions</th>
-                </tr>
+            <thead id="records-header">
+                <!-- Table header will be dynamically populated -->
             </thead>
             <tbody id="records-body">
                 <!-- Records will be displayed here -->
@@ -95,6 +114,153 @@
         </table>
         <button id="add-record-btn">Add New Record</button>
     </div>
+
+    <!-- Correction Modal -->
+    <div id="correctionModal" class="modal">
+        <div class="modal-content">
+            <h2>Correct Entry</h2>
+            <p id="correctionDetails"></p>
+            <input type="number" id="newEndValue" placeholder="New End Value">
+            <button onclick="submitCorrection()">Submit Correction</button>
+            <button onclick="closeCorrectionModal()">Cancel</button>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/manage_tables.js') }}"></script>
+    <script>
+        let currentCorrectionData = null;
+        const movementLogTables = ['Product_Movement_Log', 'Transfer_Movement_Log', 'Stage_Movement_Log'];
+
+        document.getElementById('table-select').addEventListener('change', function() {
+            const tableName = this.value;
+            fetchTableData(tableName);
+            toggleAddRecordButton(tableName);
+        });
+
+        function toggleAddRecordButton(tableName) {
+            const addRecordBtn = document.getElementById('add-record-btn');
+            if (movementLogTables.includes(tableName)) {
+                addRecordBtn.style.display = 'none';
+            } else {
+                addRecordBtn.style.display = 'block';
+            }
+        }
+
+        function fetchTableData(tableName) {
+            fetch(`/api/${tableName}`)
+                .then(response => response.json())
+                .then(data => {
+                    const headerRow = document.getElementById('records-header');
+                    const tbody = document.getElementById('records-body');
+                    headerRow.innerHTML = '';
+                    tbody.innerHTML = '';
+
+                    if (movementLogTables.includes(tableName)) {
+                        headerRow.innerHTML = `
+                            <tr>
+                                <th>Date</th>
+                                <th>Mill</th>
+                                <th>Shift</th>
+                                <th>Miller</th>
+                                <th>Product/Transfer/Stage</th>
+                                <th>Opening Balance</th>
+                                <th>Closing Balance</th>
+                                <th>Movement</th>
+                                <th>Action</th>
+                            </tr>
+                        `;
+                        data.forEach(record => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${record.date}</td>
+                                <td>${record.mill_name}</td>
+                                <td>${record.shift}</td>
+                                <td>${record.miller}</td>
+                                <td>${record.name}</td>
+                                <td>${record.opening_balance}</td>
+                                <td>${record.closing_balance}</td>
+                                <td>${record.movement}</td>
+                                <td><button onclick="openCorrectionModal('${tableName}', ${record.log_id}, '${record.id_field}', ${record.id}, ${record.mill_id}, '${record.date}', '${record.mill_name}', '${record.name}', ${record.opening_balance}, ${record.closing_balance})">Correct</button></td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        headerRow.innerHTML = `
+                            <tr>
+                                <th>Name</th>
+                                <th>Actions</th>
+                            </tr>
+                        `;
+                        data.forEach(record => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${record.name}</td>
+                                <td>
+                                    <button onclick="editRecord(${record.id})">Edit</button>
+                                    <button onclick="deleteRecord(${record.id})">Delete</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                });
+        }
+
+        function openCorrectionModal(tableName, logId, idField, idValue, millId, date, millName, productName, openingBalance, closingBalance) {
+            currentCorrectionData = { tableName, logId, idField, idValue, millId };
+            document.getElementById('correctionDetails').innerHTML = `
+                Date: ${date}<br>
+                Mill: ${millName}<br>
+                Product: ${productName}<br>
+                Opening Balance: ${openingBalance}<br>
+                Current Closing Balance: ${closingBalance}
+            `;
+            document.getElementById('correctionModal').style.display = 'block';
+        }
+
+        function closeCorrectionModal() {
+            document.getElementById('correctionModal').style.display = 'none';
+            currentCorrectionData = null;
+        }
+
+        function submitCorrection() {
+            const newEndValue = document.getElementById('newEndValue').value;
+            if (newEndValue && currentCorrectionData) {
+                fetch('/api/correct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        table_name: currentCorrectionData.tableName,
+                        log_id: currentCorrectionData.logId,
+                        id_field: currentCorrectionData.idField,
+                        id_value: currentCorrectionData.idValue,
+                        new_end_value: parseFloat(newEndValue),
+                        mill_id: currentCorrectionData.millId
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Correction applied successfully');
+                        closeCorrectionModal();
+                        fetchTableData(currentCorrectionData.tableName);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred while applying the correction');
+                });
+            }
+        }
+
+        // Initial load
+        const initialTableName = document.getElementById('table-select').value;
+        fetchTableData(initialTableName);
+        toggleAddRecordButton(initialTableName);
+    </script>
 </body>
 </html>

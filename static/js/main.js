@@ -134,7 +134,10 @@ document.addEventListener('DOMContentLoaded', function() {
         let inputs = document.querySelectorAll(`${containerSelector} input`);
         let values = {};
         inputs.forEach(input => {
-            values[input.name] = parseInt(input.value, 10) || 0; // Default to 0 if empty, using name as key to identify database ID
+            if (input.value.trim() !== '') {
+                values[input.name] = parseFloat(input.value);
+            }
+            // If the input is empty, we don't add it to the values object
         });
         return values;
     }
