@@ -135,7 +135,7 @@ def get_water_stage_data():
 def submit():
     try:
         conn = create_connection()
-        conn.autocommit = False  # Disable autocommit to maintain transaction scope
+        conn.autocommit = False
         cursor = conn.cursor()
 
         # Get the JSON data from the request
@@ -171,33 +171,22 @@ def submit():
         if not is_valid:
             return jsonify({'error': 'Opening balance cannot be less than closing balance please review your input or call an admin'}), 400
 
-        # Generate log_id
-        log_id = generate_log_id(cursor, user_date)
+        # Insert into Mill_Log and retrieve the Log_ID
+        cursor.execute("""
+            INSERT INTO dbo.Mill_Log (Date, Shift_ID, Miller_ID, Mill_ID, Actual_Date)
+            OUTPUT INSERTED.Log_ID
+            VALUES (?, ?, ?, ?, ?);
+        """, (user_date, dropdown_2, dropdown_3, mill_id, user_date))
+        
+        # Retrieve the auto-generated Log_ID
+        log_id = cursor.fetchone()[0]
         logging.debug(f"Generated log_id: {log_id}")
 
-        # Convert values to integers
-        dropdown_1 = int(dropdown_1)
-        dropdown_2 = int(dropdown_2)
-        dropdown_3 = int(dropdown_3)
-        mill_id = int(dropdown_1)  # Ensure mill_id is an integer
-        input_values_1 = {int(k): int(v) if v else None for k, v in input_values_1.items()}
-        input_values_2 = {int(k): int(v) if v else None for k, v in input_values_2.items()}
-        input_values_3 = {int(k): int(v) if v else None for k, v in input_values_3.items()}
-
-        # Debugging statements to verify data structure
-        logging.debug(f"input_values_1: {input_values_1} (type: {type(input_values_1)})")
-        logging.debug(f"input_values_2: {input_values_2} (type: {type(input_values_2)})")
-        logging.debug(f"input_values_3: {input_values_3} (type: {type(input_values_3)})")
-
-        # Ensure input values are dictionaries
-        if not isinstance(input_values_1, dict) or not isinstance(input_values_2, dict) or not isinstance(input_values_3, dict):
-            logging.error("Input values must be dictionaries.")
-            return jsonify({'error': 'Invalid input values'}), 400
-
+        # Use the retrieved log_id for subsequent inserts
         # Insert into Product_Movement_Log
         for product_id, end_value in input_values_1.items():
             if end_value is None:
-                continue  # Skip if no input value is provided
+                continue
             previous_value = get_previous_end_value(cursor, 'dbo.Product_Movement_Log', mill_id, 'Product_ID', product_id)
             movement = end_value - previous_value
             cursor.execute("""
@@ -208,7 +197,7 @@ def submit():
         # Insert into Transfer_Movement_Log
         for transfer_id, end_value in input_values_2.items():
             if end_value is None:
-                continue  # Skip if no input value is provided
+                continue
             previous_value = get_previous_end_value(cursor, 'dbo.Transfer_Movement_Log', mill_id, 'Transfer_ID', transfer_id)
             movement = end_value - previous_value
             cursor.execute("""
@@ -219,7 +208,7 @@ def submit():
         # Insert into Stage_Movement_Log
         for stage_id, end_value in input_values_3.items():
             if end_value is None:
-                continue  # Skip if no input value is provided
+                continue
             previous_value = get_previous_end_value(cursor, 'dbo.Stage_Movement_Log', mill_id, 'Stage_ID', stage_id)
             movement = end_value - previous_value
             cursor.execute("""
@@ -236,8 +225,8 @@ def submit():
     except Exception as e:
         logging.error(f"Error submitting data: {str(e)}")
         if conn:
-            conn.rollback()  # Rollback changes in case of error
+            conn.rollback()
         return jsonify({'error': 'Failed to submit data'}), 500
 
     finally:
-        conn.close()  # Close the connection
+        conn.close()

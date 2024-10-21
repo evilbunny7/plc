@@ -82,9 +82,73 @@
             display: inline-block;
             margin-right: 20px;
         }
+        #view1, #view2, #view3 {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        #view1 {
+            background-image: url("{{ url_for('static', filename='images/ScaleProductBG.webp') }}");
+        }
+        #view2 {
+            background-image: url("{{ url_for('static', filename='images/WaterScaleBG.webp') }}");
+        }
+        #view3 {
+            background-image: url("{{ url_for('static', filename='images/ConditioningScaleBG.webp') }}");
+        }
+        #view1::before, #view2::before, #view3::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+        #view1 > *, #view2 > *, #view3 > * {
+            position: relative;
+            z-index: 2;
+        }
+        .js-plotly-plot .plotly .main-svg {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+        }
+        .js-plotly-plot .plotly .gtitle {
+            font-weight: bold !important;
+            font-size: 18px !important;
+            fill: #39FF14 !important;
+        }
+        .js-plotly-plot .plotly .trace .points path {
+            stroke-width: 2px !important;
+        }
+        .js-plotly-plot .plotly .xy .crisp {
+            stroke-width: 2px !important;
+        }
+        .js-plotly-plot .plotly .gridlayer .gridticks {
+            stroke-width: 2px !important;
+        }
+        .js-plotly-plot .plotly .xtick text,
+        .js-plotly-plot .plotly .ytick text {
+            font-weight: bold !important;
+            font-size: 14px !important;
+            fill: #39FF14 !important;
+        }
     </style>
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <ul class="navbar-links">
+            <li><a href="{{ url_for('routes.index') }}">Home</a></li>
+            <li><a href="{{ url_for('view_routes.view_data') }}">Products Milled</a></li>
+            <li><a href="{{ url_for('view_routes_transfers.view_data_transfers') }}">Transfers-Conditioning</a></li>
+            <li><a href="{{ url_for('view_routes_water.view_data_water') }}">Water Stage</a></li>
+            <li><a href="{{ url_for('dash_bp.render_dash') }}">Dash Page</a></li>
+            <li><a href="{{ url_for('manage_tables_bp.manage_tables') }}">Manage Tables</a></li>
+        </ul>
+    </nav>
+
     <h1>Mill End Values</h1>
     <div class="switch-container">
         <div class="switch">
@@ -99,7 +163,7 @@
         <!-- Content will be dynamically inserted here -->
     </div>
     <div id="view2" class="view-container">
-        <h3>View 2 Content</h3>
+        <h3>Water Stage Values</h3>
         <!-- Content will be dynamically inserted here -->
     </div>
     <div id="view3" class="view-container">
@@ -120,6 +184,18 @@
                     if (idx === currentView) {
                         viewElement.classList.add('active');
                         viewElement.style.display = 'block';
+                        if (view === 'view1') {
+                            document.body.style.backgroundImage = "url('{{ url_for('static', filename='images/ScaleProductBG.webp') }}')";
+                        } else if (view === 'view2') {
+                            document.body.style.backgroundImage = "url('{{ url_for('static', filename='images/WaterScaleBG.webp') }}')";
+                        } else if (view === 'view3') {
+                            document.body.style.backgroundImage = "url('{{ url_for('static', filename='images/ConditioningScaleBG.webp') }}')";
+                        } else {
+                            document.body.style.backgroundImage = 'none';
+                        }
+                        document.body.style.backgroundSize = 'cover';
+                        document.body.style.backgroundPosition = 'center';
+                        document.body.style.backgroundRepeat = 'no-repeat';
                     } else {
                         viewElement.classList.remove('active');
                         viewElement.style.display = 'none';
@@ -146,7 +222,7 @@
                                 viewContainer.innerHTML = ''; // Clear existing content
                                 for (const [millId, graphs] of Object.entries(data.figures)) {
                                     const millHeader = document.createElement('h2');
-                                    millHeader.textContent = `Mill ${millId}`;
+                                    millHeader.textContent = `Mill ${millId}`; // This will now show Mill A, B, or C
                                     viewContainer.appendChild(millHeader);
                                     
                                     const productContainer = document.createElement('div');
@@ -206,5 +282,12 @@
             });
         });
     </script>
+    <style>
+        body {
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
 </body>
 </html>

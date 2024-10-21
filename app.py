@@ -31,9 +31,14 @@ app.register_blueprint(view_routes_water)
 from dash_module import dash_bp
 app.register_blueprint(dash_bp)
 
+from manage_tables import manage_tables_bp
+app.register_blueprint(manage_tables_bp)
+
 
 
 
 # Run the Flask app in debug mode if this file is run directly
 if __name__ == '__main__':
     app.run(debug=True)
+
+

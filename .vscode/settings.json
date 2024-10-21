@@ -1,0 +1,16 @@
+{
+    "sqltools.connections": [
+        {
+            "mssqlOptions": {
+                "appName": "SQLTools",
+                "useUTC": true,
+                "encrypt": true
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "MSSQL",
+            "name": "PLC",
+            "connectString": "Server=192.168.56.2;Database=PLC_BOT;User Id=bunny;Password=4500;"
+        }
+    ]
+}

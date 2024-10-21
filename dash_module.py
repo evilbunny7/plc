@@ -52,22 +52,44 @@ def get_transfer_values(mill_id):
     finally:
         conn.close()
 
+def get_stage_values(mill_id):
+    conn, cursor = connect_to_db()
+    try:
+        query = """
+        SELECT s.Stage_ID, s.Water_Stage, m.Mill_Name, SUM(l.Movement) AS Total_Stage_Value
+        FROM dbo.Stage_Movement_Log l
+        JOIN dbo.Water_Stage s ON l.Movement_ID = s.Stage_ID
+        JOIN dbo.Mill m ON l.Mill_ID = m.Mill_ID
+        WHERE l.Mill_ID = ?
+        GROUP BY s.Stage_ID, s.Water_Stage, m.Mill_Name
+        """
+        cursor.execute(query, mill_id)
+        results = cursor.fetchall()
+        print(f"Raw results for mill_id {mill_id}:", results)  # Debug print
+        return [{'Stage_ID': row.Stage_ID, 'Water_Stage': row.Water_Stage, 'Mill_Name': row.Mill_Name, 'Total_Stage_Value': row.Total_Stage_Value} for row in results]
+    except Exception as e:
+        print(f"Error in get_stage_values: {str(e)}")  # Error logging
+        return []
+    finally:
+        conn.close()
+
 def create_figure(value, title):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=value,
-        title={'text': title, 'font': {'family': 'Courier New, monospace', 'size': 18, 'color': '#8A0303'}},
+        title={'text': title, 'font': {'family': 'Courier New, monospace', 'size': 18, 'color': '#39FF14'}},
+        number={'font': {'color': "#39FF14"}},
         gauge={
-            'axis': {'range': [None, 1000], 'tickwidth': 2, 'tickcolor': "#8B4513"},
-            'bar': {'color': "#8B4513"},
-            'bgcolor': "rgba(245, 222, 179, 0.5)",
+            'axis': {'range': [None, max(1000, value * 1.2)], 'tickwidth': 2, 'tickcolor': "#39FF14"},
+            'bar': {'color': "#39FF14"},
+            'bgcolor': "rgba(0, 0, 0, 0)",
             'borderwidth': 2,
-            'bordercolor': "#8B4513",
+            'bordercolor': "#39FF14",
             'steps': [
-                {'range': [0, 250], 'color': "#D2B48C"},
-                {'range': [250, 500], 'color': "#DEB887"},
-                {'range': [500, 750], 'color': "#F4A460"},
-                {'range': [750, 1000], 'color': "#CD853F"}
+                {'range': [0, value * 0.25], 'color': "rgba(0, 50, 0, 0.5)"},
+                {'range': [value * 0.25, value * 0.5], 'color': "rgba(0, 100, 0, 0.5)"},
+                {'range': [value * 0.5, value * 0.75], 'color': "rgba(0, 150, 0, 0.5)"},
+                {'range': [value * 0.75, value], 'color': "rgba(0, 200, 0, 0.5)"}
             ],
             'threshold': {
                 'line': {'color': "red", 'width': 4},
@@ -79,8 +101,10 @@ def create_figure(value, title):
     fig.update_layout(
         width=360, 
         height=320,
-        paper_bgcolor="rgba(245, 222, 179, 0.72)",
-        font={'color': "#8B4513", 'family': "Courier New, monospace"}
+        paper_bgcolor="rgba(0, 0, 0, 0)",
+        plot_bgcolor="rgba(0, 0, 0, 0)",
+        font={'color': "#39FF14", 'family': "Courier New, monospace"},
+        margin=dict(l=30, r=30, t=50, b=30)
     )
     return {
         'html': pio.to_html(fig, full_html=False, include_plotlyjs=False),
@@ -90,6 +114,7 @@ def create_figure(value, title):
 @dash_bp.route('/update_view')
 def update_view():
     view = request.args.get('view', 'view1')
+    
     figures = {}
 
     print(f"Updating view: {view}")  # Debug print
@@ -105,20 +130,25 @@ def update_view():
             end_values = get_end_values(mill_id)
             figures[mill_id] = []
             for entry in end_values:
-                end_value_tons = entry['Total_End_Value'] / 1000
-                title = f"{entry['Mill_Name']} - {entry['Product_Name']} End Value (tons)"
-                figures[mill_id].append(create_figure(end_value_tons, title))
+                end_value = entry['Total_End_Value']
+                title = f"{entry['Mill_Name']} - {entry['Product_Name']} End Value"
+                figures[mill_id].append(create_figure(end_value, title))
     elif view == 'view2':
         for mill_id in mills:
-            figures[mill_id] = [{'html': f"<p>Placeholder for View 2, Mill {mill_id}</p>", 'data': None}]
+            stage_values = get_stage_values(mill_id)
+            figures[mill_id] = []
+            for entry in stage_values:
+                stage_value = entry['Total_Stage_Value']
+                title = f"{entry['Mill_Name']} - {entry['Water_Stage']} Stage Value"
+                figures[mill_id].append(create_figure(stage_value, title))
     elif view == 'view3':
         for mill_id in mills:
             transfer_values = get_transfer_values(mill_id)
             figures[mill_id] = []
             for entry in transfer_values:
-                end_value_tons = entry['Total_End_Value'] / 1000
-                title = f"{entry['Mill_Name']} - {entry['Transfer_Type']} Transfer Value (tons)"
-                figures[mill_id].append(create_figure(end_value_tons, title))
+                transfer_value = entry['Total_End_Value']
+                title = f"{entry['Mill_Name']} - {entry['Transfer_Type']} Transfer Value"
+                figures[mill_id].append(create_figure(transfer_value, title))
 
     print(f"Generated figures for {view}:", figures)  # Debug print
     return jsonify({'status': 'success', 'view': view, 'figures': figures})
@@ -126,7 +156,6 @@ def update_view():
 @dash_bp.route('/dash')
 def render_dash():
     view = request.args.get('view', 'view1')
-    # We'll fetch initial data here
     figures = {}
     mills = ['1', '2', '3']
 
@@ -135,83 +164,26 @@ def render_dash():
             end_values = get_end_values(mill_id)
             figures[mill_id] = []
             for entry in end_values:
-                product_id = entry['Product_ID']
-                product_name = entry['Product_Name']
-                mill_name = entry['Mill_Name']
-                end_value_kg = entry['Total_End_Value']
-                end_value_tons = end_value_kg / 1000  # Convert to metric tons
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=end_value_tons,
-                    title={'text': f"{mill_name} - {product_name} End Value (tons)", 'font': {'family': 'Courier New, monospace', 'size': 18, 'color': '#8A0303'}},
-                    gauge={
-                        'axis': {'range': [None, 1000], 'tickwidth': 2, 'tickcolor': "#8B4513"},
-                        'bar': {'color': "#8B4513"},
-                        'bgcolor': "rgba(245, 222, 179, 0.5)",  # More transparent background color
-                        'borderwidth': 2,
-                        'bordercolor': "#8B4513",
-                        'steps': [
-                            {'range': [0, 250], 'color': "#D2B48C"},
-                            {'range': [250, 500], 'color': "#DEB887"},
-                            {'range': [500, 750], 'color': "#F4A460"},
-                            {'range': [750, 1000], 'color': "#CD853F"}
-                        ],
-                        'threshold': {
-                            'line': {'color': "red", 'width': 4},
-                            'thickness': 0.75,
-                            'value': end_value_tons
-                        }
-                    }
-                ))
-                fig.update_layout(
-                    width=360, 
-                    height=320,
-                    paper_bgcolor="rgba(245, 222, 179, 0.72)",  # More transparent background color
-                    font={'color': "#8B4513", 'family': "Courier New, monospace"}
-                )
-                figures[mill_id].append(pio.to_html(fig, full_html=False))
+                end_value = entry['Total_End_Value']
+                title = f"{entry['Mill_Name']} - {entry['Product_Name']} End Value"
+                figures[mill_id].append(create_figure(end_value, title)['html'])
+    elif view == 'view2':
+        for mill_id in mills:
+            stage_values = get_stage_values(mill_id)
+            figures[mill_id] = []
+            for entry in stage_values:
+                stage_value = entry['Total_Stage_Value']
+                title = f"{entry['Mill_Name']} - {entry['Water_Stage']} Stage Value"
+                figures[mill_id].append(create_figure(stage_value, title)['html'])
     elif view == 'view3':
         for mill_id in mills:
             transfer_values = get_transfer_values(mill_id)
             figures[mill_id] = []
             for entry in transfer_values:
-                transfer_id = entry['Transfer_ID']
-                transfer_type_name = entry['Transfer_Type']
-                mill_name = entry['Mill_Name']
-                end_value_kg = entry['Total_End_Value']
-                end_value_tons = end_value_kg / 1000  # Convert to metric tons
-                fig = go.Figure(go.Indicator(
-                    mode="gauge+number",
-                    value=end_value_tons,
-                    title={'text': f"{mill_name} - {transfer_type_name} Transfer Value (tons)", 'font': {'family': 'Courier New, monospace', 'size': 18, 'color': '#8A0303'}},
-                    gauge={
-                        'axis': {'range': [None, 1000], 'tickwidth': 2, 'tickcolor': "#8B4513"},
-                        'bar': {'color': "#8B4513"},
-                        'bgcolor': "rgba(245, 222, 179, 0.5)",  # More transparent background color
-                        'borderwidth': 2,
-                        'bordercolor': "#8B4513",
-                        'steps': [
-                            {'range': [0, 250], 'color': "#D2B48C"},
-                            {'range': [250, 500], 'color': "#DEB887"},
-                            {'range': [500, 750], 'color': "#F4A460"},
-                            {'range': [750, 1000], 'color': "#CD853F"}
-                        ],
-                        'threshold': {
-                            'line': {'color': "red", 'width': 4},
-                            'thickness': 0.75,
-                            'value': end_value_tons
-                        }
-                    }
-                ))
-                fig.update_layout(
-                    width=360, 
-                    height=320,
-                    paper_bgcolor="rgba(245, 222, 179, 0.72)",  # More transparent background color
-                    font={'color': "#8B4513", 'family': "Courier New, monospace"}
-                )
-                figures[mill_id].append(pio.to_html(fig, full_html=False))
+                transfer_value = entry['Total_End_Value']
+                title = f"{entry['Mill_Name']} - {entry['Transfer_Type']} Transfer Value"
+                figures[mill_id].append(create_figure(transfer_value, title)['html'])
     else:
-        # Handle view2 or any other case
         for mill_id in mills:
             figures[mill_id] = ["<p>Placeholder for View 2</p>"]
 
